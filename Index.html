@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Resp Checker</title>
+  <link rel="icon" href="images/favicon-default.png"/>
+  <style>
+       .boss-card {
+       border-color: pink !important;
+     }
+       .signature {
+       position: fixed;
+       top: 10px;
+       left: 10px;
+       color: gold;
+       font-weight: bold;
+       font-family: 'Segoe UI', sans-serif;
+       z-index: 10000;
+       user-select: none;
+       pointer-events: none;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: url('images/tlo.png') no-repeat center center fixed;
+      background-size: cover;
+    }
+    .overlay {
+      background-color: rgba(0, 0, 0, 0.75);
+      min-height: 100vh;
+      padding: 20px;
+      position: relative;
+    }
+    h1 {
+      color: #fff;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .tab {
+      padding: 6px 12px;
+      background-color: #333;
+      color: #ddd;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+    .tab.active {
+      background-color: #555;
+      color: white;
+    }
+    .boss-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .boss-card {
+      background-color: #121212;
+      border-radius: 16px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.7);
+      padding: 16px;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: transform 0.2s ease-in-out;
+      min-height: 210px;
+      border: 4px solid transparent; /* domyślnie przezroczysta */
+    }
+    .boss-card:hover {
+      transform: scale(1.03);
+    }
+    .boss-card img {
+      width: 70px;
+      height: 70px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      object-fit: contain;
+    }
+    .boss-name {
+      font-weight: bold;
+      margin-bottom: 6px;
+      text-align: center;
+      min-height: 30px;
+    }
+    .timer {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-align: center;
+      min-height: 38px;
+      line-height: 1.2;
+    }
+    .controls {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      justify-content: center;
+      width: 100%;
+    }
+    .controls input[type="time"] {
+      background-color: #333;
+      border: none;
+      color: white;
+      padding: 4px 6px;
+      border-radius: 6px;
+      flex-grow: 1;
+      min-width: 80px;
+    }
+    .controls button {
+      background-color: #444;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+    .controls button:hover {
+      background-color: #666;
+    }
+    #testNotificationBtn {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      background-color: #444;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 0 0 8px rgba(255,255,255,0.2);
+      transition: background 0.3s;
+      z-index: 1000;
+    }
+    #testNotificationBtn:hover {
+      background-color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="signature">By Deathso</div>
+  <div class="overlay">
+    <h1>Resp Checker</h1>
+    <div class="tabs" id="tabs"></div>
+    <div class="boss-grid" id="bossGrid"></div>
+  </div>
+  <button id="testNotificationBtn" title="Testuj powiadomienie">TESTUJ POWIADOMIENIE</button>
+
+  <script>
+    const bosses = [
+      { name: "Halmengir", side: "jezioro", min: 60, max: 90, img: "images/70px-halmengir.png" },
+      { name: "Olm", side: "jezioro", min: 120, max: 180, img: "images/70px-olm.png" },
+      { name: "Troll Zimowy A", side: "jezioro", min: 30, max: 45, img: "images/70px-troll_zimowy1.png" },
+      { name: "Troll Zimowy B", side: "jezioro", min: 30, max: 45, img: "images/70px-troll_zimowy2.png" },
+      { name: "Podroznik", side: "jezioro", min: 20, max: 30, img: "images/70px-podroznik.png" },
+      { name: "Koszmar", side: "jezioro", min: 60, max: 90, img: "images/70px-koszmar.png" },
+      { name: "Pacynkarz", side: "jezioro", min: 30, max: 45, img: "images/70px-pacynkarz.png" },
+
+      { name: "Krwiopij", side: "beirn", min: 60, max: 90, img: "images/70px-krwiopij.png" },
+      { name: "Wisp", side: "beirn", min: 120, max: 180, img: "images/70px-wisp.png" },
+      { name: "Zywiciel Jak", side: "beirn", min: 60, max: 90, img: "images/70px-zywiciel_jak.png" },
+      { name: "Zerca", side: "beirn", min: 45, max: 60, img: "images/70px-zerca.png" },
+      { name: "Zywiciel Jeti", side: "beirn", min: 60, max: 90, img: "images/70px-zywiciel_jeti.png" },
+      { name: "Gnawk", side: "beirn", min: 120, max: 180, img: "images/70px-gnawk.png" },
+      { name: "Mamut", side: "beirn", min: 120, max: 180, img: "images/70px-mamut.png" },
+      { name: "Astronom", side: "beirn", min: 360, max: 480, img: "images/70px-astronom.png" },
+      { name: "Kowal Lugusa", side: "beirn", min: 331, max: 331, img: "images/70px-kowal_lugusa.png" },
+      { name: "Straz Lugusa", side: "beirn", min: 331, max: 331, img: "images/70px-straz_lugusa.png" }, 
+
+      { name: "Wendigo", side: "wawoz", min: 120, max: 150, img: "images/70px-Wendigo.png" },
+      { name: "Zimowy Szaman", side: "wawoz", min: 60, max: 90, img: "images/70px-zimowy_szaman.png" },
+      { name: "Tygrys Gorski", side: "wawoz", min: 25, max: 35, img: "images/70px-tygrys_gorski.png" },
+      { name: "Oblakana Harpia", side: "wawoz", min: 35, max: 50, img: "images/70px-oblakana_harpia.png" },
+      { name: "Zawieja", side: "wawoz", min: 45, max: 60, img: "images/70px-zawieja.png" },
+      { name: "Ragak Maruder", side: "wawoz", min: 120, max: 180, img: "images/70px-ragak_maruder.png" },
+
+      { name: "Wsciekly Burkan", side: "thalia", min: 20, max: 30, img: "images/70px-wsciekly_burkan.png" },
+      { name: "Jesienica", side: "thalia", min: 35, max: 50, img: "images/70px-jesienica.png" },
+      { name: "Dritan Zarliwy", side: "thalia", min: 90, max: 120, img: "images/70px-dritan_zarliwy.png" },
+
+      { name: "Wykwit A", side: "pustkowie", min: 25, max: 40, img: "images/70px-wykwit1.png" },
+      { name: "Wykwit B", side: "pustkowie", min: 25, max: 40, img: "images/70px-wykwit2.png" },
+      { name: "Grobnica", side: "pustkowie", min: 45, max: 60, img: "images/70px-grobnica.png" },
+      { name: "Telek", side: "orkowie", min: 60, max: 66, img: "images/70px-telek.png" },
+      { name: "Rizurul", side: "orkowie", min: 40, max: 45, img: "images/70px-rizurul.png" },
+      { name: "Zaimm", side: "orkowie", min: 20, max: 24, img: "images/70px-zaimm.png" },
+      { name: "Yoko", side: "elity", min: 15, max: 19, img: "images/70px-yoko.png" },
+      { name: "Hobgoblin Klucznik", side: "elity", min: 5, max: 5, img: "images/70px-hogoblin_klucznik.png" },
+      { name: "Sabeltig", side: "elity", min: 8, max: 8, img: "images/70px-sabeltig.png" },
+      { name: "Morkvirr", side: "elity", min: (6 * 60 + 40) / 60, max: (6 * 60 + 40) / 60, img: "images/70px-morkvirr.png" },
+
+    ];
+
+    const sideColors = {
+      jezioro: "#3b82f6",  // niebieski
+      beirn: "#f97316",    // pomarańczowy
+      wawoz: "#22c55e",    // zielony
+      thalia: "#a855f7",   // fioletowy
+      pustkowie: "#6b7280" // szary
+    };
+
+    const sides = [...new Set(bosses.map(b => b.side))];
+    let activeSide = sides[0];
+    const timers = JSON.parse(localStorage.getItem("respTimers") || "{}");
+
+    const tabsEl = document.getElementById("tabs");
+    const gridEl = document.getElementById("bossGrid");
+
+    function renderTabs() {
+      tabsEl.innerHTML = sides
+        .map(side => `<button class="tab ${side === activeSide ? "active" : ""}" onclick="switchSide('${side}')">${side.toUpperCase()}</button>`)
+        .join("");
+    }
+
+    window.switchSide = function(side) {
+      activeSide = side;
+      renderTabs();
+      renderGrid();
+    };
+
+    function formatTime(ms) {
+      const t = Math.max(0, ms);
+      const m = Math.floor(t / 60000);
+      const s = Math.floor((t % 60000) / 1000);
+      return `${m.toString().padStart(2,"0")}:${s.toString().padStart(2,"0")}`;
+    }
+
+    function renderGrid() {
+      gridEl.innerHTML = "";
+
+      // Sortuj bossów rosnąco wg minimalnego respawnu (licząc od teraz)
+      const now = Date.now();
+      const sorted = bosses
+        .filter(b => b.side === activeSide)
+        .map(b => {
+          const lastKill = timers[b.name] || 0;
+          const diffMin = (lastKill + b.min * 60000) - now;
+          return { ...b, diffMin };
+        })
+        .sort((a,b) => a.diffMin - b.diffMin);
+
+      sorted.forEach(boss => {
+        const div = document.createElement("div");
+        div.className = "boss-card";
+        div.style.borderColor = sideColors[boss.side] || "transparent";
+
+        div.innerHTML = `
+          <img src="${boss.img}" alt="${boss.name}" />
+          <div class="boss-name">${boss.name}</div>
+          <div class="timer" id="timer-${boss.name}">Brak danych</div>
+          <div class="controls">
+            <input type="time" id="time-${boss.name}" />
+            <button onclick="setTime('${boss.name}')">Ustaw</button>
+            <button onclick="setNow('${boss.name}')">Teraz</button>
+            <button onclick="resetTimer('${boss.name}')">Reset</button>
+          </div>
+        `;
+        gridEl.appendChild(div);
+      });
+    }
+
+    window.setTime = function(name) {
+      const timeInput = document.getElementById(`time-${name}`);
+      if (!timeInput.value) {
+        alert("Wprowadź czas (HH:MM)");
+        return;
+      }
+      const [hh, mm] = timeInput.value.split(":").map(Number);
+      if (hh > 23 || mm > 59) {
+        alert("Nieprawidłowy czas");
+        return;
+      }
+      const now = new Date();
+      let killDate = new Date();
+      killDate.setHours(hh, mm, 0, 0);
+      if (killDate > now) {
+        killDate.setDate(killDate.getDate() - 1);
+      }
+      timers[name] = killDate.getTime();
+      saveTimers();
+      updateTimers();
+    };
+
+    window.setNow = function(name) {
+      timers[name] = Date.now();
+      saveTimers();
+      updateTimers();
+    };
+
+    window.resetTimer = function(name) {
+      delete timers[name];
+      saveTimers();
+      updateTimers();
+    };
+
+    function saveTimers() {
+      localStorage.setItem("respTimers", JSON.stringify(timers));
+    }
+
+    function updateTimers() {
+      const now = Date.now();
+      bosses.forEach(b => {
+        if (b.side !== activeSide) return;
+
+        const timerEl = document.getElementById(`timer-${b.name}`);
+        if (!timerEl) return;
+
+        if (!timers[b.name]) {
+          timerEl.innerHTML = "Brak danych";
+          timerEl.style.color = "#ccc";
+          return;
+        }
+
+        const lastKill = timers[b.name];
+        const respawnMin = b.min * 60000;
+        const respawnMax = b.max * 60000;
+        const diffMin = lastKill + respawnMin - now;
+        const diffMax = lastKill + respawnMax - now;
+
+        if (diffMax <= 0) {
+          timerEl.innerHTML = `<span style="color:#ff0000; font-weight:bold;">RESPAWN minął!</span>`;
+        } else {
+          let minText = "";
+          if (diffMin > 0) {
+            minText = `<span style="color:#00ff00;">Min: ${formatTime(diffMin)}</span>`;
+          } else {
+            minText = `<span style="color:#ff0000; font-weight:bold;">Min. minął!</span>`;
+          }
+          const maxText = `<br><span style="color:#ffa500;">Max: ${formatTime(diffMax)}</span>`;
+
+          timerEl.innerHTML = minText + maxText;
+        }
+      });
+    }
+
+    function notify(message) {
+      if (!("Notification" in window)) return;
+      if (Notification.permission === "granted") {
+        new Notification(message);
+      } else if (Notification.permission !== "denied") {
+        Notification.requestPermission().then(permission => {
+          if (permission === "granted") {
+            new Notification(message);
+          }
+        });
+      }
+    }
+
+    // Powiadomienie 1 min przed min. respawnem i po zakończeniu max respawnu
+    function checkNotifications() {
+      const now = Date.now();
+
+      bosses.forEach(b => {
+        if (!timers[b.name]) return;
+
+        const lastKill = timers[b.name];
+        const respawnMin = b.min * 60000;
+        const respawnMax = b.max * 60000;
+
+        const diffMin = lastKill + respawnMin - now;
+        const diffMax = lastKill + respawnMax - now;
+
+        if (diffMin > 0 && diffMin <= 60000 && !b.notifiedMin) {
+          notify(`Boss ${b.name} respawnuje za około minutę!`);
+          b.notifiedMin = true;
+          b.notifiedMax = false;
+        }
+
+        if (diffMax <= 0 && !b.notifiedMax) {
+          notify(`Boss ${b.name} powinien już być dostępny!`);
+          b.notifiedMax = true;
+          b.notifiedMin = false;
+        }
+
+        if (diffMax > 0 && diffMin > 60000) {
+          b.notifiedMin = false;
+          b.notifiedMax = false;
+        }
+      });
+    }
+
+    document.getElementById("testNotificationBtn").onclick = () => {
+      const testBoss = bosses[0];
+      notify(`Testowe powiadomienie dla bossa: ${testBoss.name}`);
+    };
+
+    renderTabs();
+    renderGrid();
+    updateTimers();
+
+    setInterval(() => {
+      updateTimers();
+      checkNotifications();
+    }, 1000);
+  </script>
+</body>
+</html>
